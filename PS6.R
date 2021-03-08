@@ -3,9 +3,8 @@
 #University of Central Florida
 #College of Business
 #QMB 6912 Capstone Project in Business Analytics
-#Problem Set #5
+#Problem Set #6
 #
-#Salma Zayed
 ##################################################
 # 
 #Flyreels data set
@@ -14,7 +13,6 @@
 # 
 #working directory
 #print(getwd())
-#wd<-"C:/Users/szaye/OneDrive/Documents/UCF/Spring 2021/QMB6912/ProblemSet6"
 # Set data directory.
 data_dir <- 'Data'
 
@@ -68,11 +66,15 @@ library(plyr)
 #install.packages("gcookbook")
 #library(gcookbook)
 
+#Box-Cox transformation package
+#install.packages("faraway")
+library(faraway)
+
 #Read CSV
 data <- read.csv("FlyReels.csv")
 print(data)
 
-#Assuming that a reel is like a cylinder where Volume = ?? R^2L  
+#Assuming that a reel is like a cylinder where Volume = π R^2L  
 density <- ((data$Weight)/(pi * (data$Diameter/2)^2 * data$Width))
 
 #Adding density as a column to the dataframe
@@ -105,7 +107,7 @@ summary(modelMultiple.Country2)
 
 
 layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
-plot(modelMultiple1)
+plot(modelMultiple)
 
 
 #Changing Yes and No characters into numeric 0s and 1
@@ -141,7 +143,8 @@ plot(modelMultiple1)
 
 
 #filter relevant columns
-data_filtered <- data %>% select(3,4,5,6,7,8,9,10)
+data_filtered <- data %>% 
+  select_(3,4,5,6,7,8,9,10)
 head(data_filtered)
 
 #let's make the data have mean of zero and standard deviation of 1 standardize the data (normalize)
@@ -181,16 +184,6 @@ plot(modelMultiple2)
 
 data$Country = as.factor(data$Country)
 str(data)
-#Multiple Variable Regression country broken down
-modelMultiple3 <- lm(Price ~ Weight+Diameter+Width+Sealed+Country+Machined+density, data)
-print(modelMultiple3)
-coef(modelMultiple3)
-summary(modelMultiple3)
-
-layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
-plot(modelMultiple3)
-
-
 
 #model selection with AIC, simple to use
 #modelMultiple1
@@ -222,4 +215,49 @@ booteval.relimp(boot2)
 plot(booteval.relimp(boot2,sort=TRUE))
 
 
-###############     Muliple Variable Regression     ##################################################3
+###############    Box-Cox Transformation     ##################################################
+
+#model 1 plot
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(modelMultiple1)
+
+#box-cox for model 1
+#bc_m1=boxcox(modelMultiple1)
+
+bc_m1=boxcox(modelMultiple1,lambda=seq(-3,3))
+print(bc_m1)
+
+#extract best lambda - close to the above lambda -3,3 if we round up
+best.lam_m1=bc_m1$x[which(bc_m1$y==max(bc_m1$y))]
+print(best.lam_m1)
+
+#boxcox says to transform the data using inverse
+modelMultiple1_inv=lm((Price)^-1~Weight+Diameter+Width+Sealed+Country+Machined+density, data)
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(modelMultiple1_inv)
+
+#comparing to plot(modelMultiple1), with the inverse model we have a straighter trend lines, thus it has improved normality, constant variance and linearity.  
+
+#box-cox for model 2
+#model 2 plot
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(modelMultiple2)
+
+#box-cox for model2
+
+bc_m2=boxcox(modelMultiple2,lambda=seq(-3,3))
+print(bc_m2)
+
+#extract best lambda - close to the above lambda -3,3 if we round up
+best.lam_m2=bc_m2$x[which(bc_m2$y==max(bc_m2$y))]
+print(best.lam_m2)
+
+#maybe model 2 would be best with a lambda of 2.. rounding down best lambda
+bc_m2=boxcox(modelMultiple2,lambda=seq(-2,2))
+
+
+#boxcox says to transform the data using inverse
+modelMultiple2_inv=lm((Price)^-1~Diameter+Sealed+Country+Machined, data)
+
+layout(matrix(c(1,2,3,4),2,2)) # optional 4 graphs/page
+plot(modelMultiple2_inv)
